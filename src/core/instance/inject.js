@@ -13,7 +13,12 @@ export function initProvide (vm: Component) {
   }
 }
 
+/**
+ * 1. 处理inject选项，最终得到{ key: val }
+ * 2. 对key做响应式处理并代理到Vue实例上，通过this.key访问
+ */
 export function initInjections (vm: Component) {
+  // 从配置上解析 inject 选项， 最终变成 { key: val } 的形式
   const result = resolveInject(vm.$options.inject, vm)
   if (result) {
     toggleObserving(false)
@@ -29,13 +34,24 @@ export function initInjections (vm: Component) {
           )
         })
       } else {
+        // 将结果做响应式处理，将每个key代理到Vue实例上 我们才可以使用 this.key
         defineReactive(vm, key, result[key])
       }
     })
     toggleObserving(true)
   }
 }
-
+/**
+ *
+ * @param {*} inject = {
+ *   key:{
+ *      from: provideKey,
+ *      default: xxx
+ *   }
+ * }
+ * @param {*} vm
+ * @returns { key: val }
+ */
 export function resolveInject (inject: any, vm: Component): ?Object {
   if (inject) {
     // inject is :any because flow is not smart enough to figure out cached

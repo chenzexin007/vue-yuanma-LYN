@@ -398,6 +398,7 @@ export function mergeOptions (
     child = child.options
   }
 
+  // 规格化数据
   normalizeProps(child, vm)
   normalizeInject(child, vm)
   normalizeDirectives(child)
@@ -407,6 +408,7 @@ export function mergeOptions (
   // the result of another mergeOptions call.
   // Only merged options has the _base property.
   if (!child._base) {
+    // child有extend、mixin字段的时候，需要进行选项合并
     if (child.extends) {
       parent = mergeOptions(parent, child.extends, vm)
     }
@@ -417,13 +419,14 @@ export function mergeOptions (
     }
   }
 
+  // return options
   const options = {}
   let key
   for (key in parent) {
     mergeField(key)
   }
   for (key in child) {
-    if (!hasOwn(parent, key)) {
+    if (!hasOwn(parent, key)) {  // 若parent[key], 和child[key]发生重复时，会使用child覆盖parent的
       mergeField(key)
     }
   }
