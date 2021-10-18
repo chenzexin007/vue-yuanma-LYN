@@ -29,13 +29,29 @@ export function initMixin (Vue: Class<Component>) {
 
     // a flag to avoid this being observed
     vm._isVue = true
+    // 处理组件配置项
     // merge options
     if (options && options._isComponent) {
       // optimize internal component instantiation
       // since dynamic options merging is pretty slow, and none of the
       // internal component options needs special treatment.
+      // 子组件处理： 性能优化： 减少原型链的动态查找，提高执行效率
       initInternalComponent(vm, options)
     } else {
+      // 根组件： 选项合并，将全局配置合并到根组件的局部配置上
+      /**
+       * eg.
+       *  Vue.component('comp', {   // 这个vue是全局的，但是会被合并到下面vue的根组件的局部配置components上
+       *    tenplate: '<div>i am comp</div>'
+       * })
+       *  new Vue({
+       *    el: 'xx',
+       *    data: {},
+       *    components:{
+       *       comp  // 这里的comp全局组件，是通过合并全局配置到该根组件对应配置上的结果
+       *    }
+       * })
+       */
       vm.$options = mergeOptions(
         resolveConstructorOptions(vm.constructor),
         options || {},
@@ -72,10 +88,12 @@ export function initMixin (Vue: Class<Component>) {
     }
   }
 }
-
+// 性能优化：  打平对象上的属性，减少运行时原型链的动态查找，提高效率
 export function initInternalComponent (vm: Component, options: InternalComponentOptions) {
+  // 基于 构造函数 上的配置对象创建  vm.$options
   const opts = vm.$options = Object.create(vm.constructor.options)
   // doing this because it's faster than dynamic enumeration.
+  // 打平对象上的属性，减少运行时原型链的动态查找，提高效率
   const parentVnode = options._parentVnode
   opts.parent = options.parent
   opts._parentVnode = parentVnode
@@ -85,7 +103,7 @@ export function initInternalComponent (vm: Component, options: InternalComponent
   opts._parentListeners = vnodeComponentOptions.listeners
   opts._renderChildren = vnodeComponentOptions.children
   opts._componentTag = vnodeComponentOptions.tag
-
+  // 有render函数，将其赋值到 vm.$options
   if (options.render) {
     opts.render = options.render
     opts.staticRenderFns = options.staticRenderFns
