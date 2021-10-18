@@ -37,20 +37,35 @@ const sharedPropertyDefinition = {
 }
 
 export function proxy (target: Object, sourceKey: string, key: string) {
+  // set、get实现
   sharedPropertyDefinition.get = function proxyGetter () {
     return this[sourceKey][key]
   }
   sharedPropertyDefinition.set = function proxySetter (val) {
     this[sourceKey][key] = val
   }
+  // 使用defineProperty拦截this.key, 返回 this[sourceKey][key] ： this._prop.key
+  // 这样子我们就可以直接this.propKey，也就是直接在vue的this下面访问到props了
   Object.defineProperty(target, key, sharedPropertyDefinition)
 }
 
+// 响应式入口，处理: props、methods、data、computed、watch
 export function initState (vm: Component) {
   vm._watchers = []
   const opts = vm.$options
+  // initProps:
+  // 1. 对props配置响应式处理
+  // 2. 代理 props 配置上的 key 到vue实例， 可以直接 this.propKey 访问
   if (opts.props) initProps(vm, opts.props)
+  // initMethods:
+  // 1. 判重处理
+  // 2. 将methodKey 代理到 vue实例， 通过 this.methods\Key 访问
   if (opts.methods) initMethods(vm, opts.methods)
+  // initData
+  // 1. data处理成对象
+  // 2. 判重， data中的key不能和props、methods中的key重复
+  // 3. 代理， 将 data中的key 代理到 vue实例上， 可以通过 this.dataKey访问
+  // 4. 响应式
   if (opts.data) {
     initData(vm)
   } else {
@@ -73,10 +88,12 @@ function initProps (vm: Component, propsOptions: Object) {
   if (!isRoot) {
     toggleObserving(false)
   }
+  // 遍历props
   for (const key in propsOptions) {
     keys.push(key)
     const value = validateProp(key, propsOptions, propsData, vm)
     /* istanbul ignore else */
+    // 一些提示，不用看
     if (process.env.NODE_ENV !== 'production') {
       const hyphenatedKey = hyphenate(key)
       if (isReservedAttribute(hyphenatedKey) ||
@@ -98,12 +115,14 @@ function initProps (vm: Component, propsOptions: Object) {
         }
       })
     } else {
+      // 响应式处理
       defineReactive(props, key, value)
     }
     // static props are already proxied on the component's prototype
     // during Vue.extend(). We only need to proxy props defined at
     // instantiation here.
     if (!(key in vm)) {
+      // 代理， 将props上的key代理到vm上，这样可以直接this.key访问
       proxy(vm, `_props`, key)
     }
   }
@@ -112,10 +131,12 @@ function initProps (vm: Component, propsOptions: Object) {
 
 function initData (vm: Component) {
   let data = vm.$options.data
+  // 处理data， 以保证返回得data 是一个 对象
   data = vm._data = typeof data === 'function'
     ? getData(data, vm)
     : data || {}
   if (!isPlainObject(data)) {
+    // 非对象， 直接赋值为空对象， 并给出警告
     data = {}
     process.env.NODE_ENV !== 'production' && warn(
       'data functions should return an object:\n' +
@@ -124,7 +145,9 @@ function initData (vm: Component) {
     )
   }
   // proxy data on instance
+  // data 的key 扁平化为数组
   const keys = Object.keys(data)
+  // 判重，不能和 props和methos中的key重复
   const props = vm.$options.props
   const methods = vm.$options.methods
   let i = keys.length
@@ -145,10 +168,12 @@ function initData (vm: Component) {
         vm
       )
     } else if (!isReserved(key)) {
+      // 把data的key代理到 vue实例上， 可以通过 this.dataKey 访问
       proxy(vm, `_data`, key)
     }
   }
   // observe data
+  // 响应式处理
   observe(data, true /* asRootData */)
 }
 
@@ -264,6 +289,7 @@ function createGetterInvoker(fn) {
 
 function initMethods (vm: Component, methods: Object) {
   const props = vm.$options.props
+  // 判重处理， methods中的key不能和props中的key重复， 且 props的key优先级高一点
   for (const key in methods) {
     if (process.env.NODE_ENV !== 'production') {
       if (typeof methods[key] !== 'function') {
@@ -286,6 +312,7 @@ function initMethods (vm: Component, methods: Object) {
         )
       }
     }
+    // 将 methods上的key 代理到 vue实例上， 可以 this.methodKey 访问对应的methods
     vm[key] = typeof methods[key] !== 'function' ? noop : bind(methods[key], vm)
   }
 }
