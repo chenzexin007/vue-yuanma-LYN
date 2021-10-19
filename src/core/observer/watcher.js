@@ -206,7 +206,9 @@ export default class Watcher {
    * This only gets called for lazy watchers.
    */
   evaluate () {
+    // 执行 new 实例 传进来的第二个配置项方法，获取到值并赋值返回
     this.value = this.get()
+    // 将dirty设置为false
     this.dirty = false
   }
 

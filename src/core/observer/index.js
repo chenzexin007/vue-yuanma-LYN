@@ -41,17 +41,18 @@ export class Observer {
 
   constructor (value: any) {
     this.value = value
+
     this.dep = new Dep()
     this.vmCount = 0
     def(value, '__ob__', this)
-    if (Array.isArray(value)) {
+    if (Array.isArray(value)) { // 数组响应式处理
       if (hasProto) {
         protoAugment(value, arrayMethods)
       } else {
         copyAugment(value, arrayMethods, arrayKeys)
       }
       this.observeArray(value)
-    } else {
+    } else {  // 对象响应式处理
       this.walk(value)
     }
   }
@@ -113,6 +114,7 @@ export function observe (value: any, asRootData: ?boolean): Observer | void {
   }
   let ob: Observer | void
   if (hasOwn(value, '__ob__') && value.__ob__ instanceof Observer) {
+    // 有 '__ob__'key， 证明已经经过响应式处理，直接赋值，不需要进行响应式处理
     ob = value.__ob__
   } else if (
     shouldObserve &&
@@ -121,6 +123,7 @@ export function observe (value: any, asRootData: ?boolean): Observer | void {
     Object.isExtensible(value) &&
     !value._isVue
   ) {
+    // 没有 '__ob__'key， 添加响应式处理
     ob = new Observer(value)
   }
   if (asRootData && ob) {
@@ -139,6 +142,7 @@ export function defineReactive (
   customSetter?: ?Function,
   shallow?: boolean
 ) {
+  // 每个key  new 一个订阅者对象
   const dep = new Dep()
 
   const property = Object.getOwnPropertyDescriptor(obj, key)
@@ -160,6 +164,7 @@ export function defineReactive (
     get: function reactiveGetter () {
       const value = getter ? getter.call(obj) : val
       if (Dep.target) {
+        // 依赖收集
         dep.depend()
         if (childOb) {
           childOb.dep.depend()

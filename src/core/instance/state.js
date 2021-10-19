@@ -71,10 +71,19 @@ export function initState (vm: Component) {
   } else {
     observe(vm._data = {}, true /* asRootData */)
   }
+  // initComputed
+  // 1. computed是通过watcher实现的，给每个 computedKey 实例化一个watcher实例
+  // 2. computed中的key 代理到 vue实例上 通过this.computedKey 访问
+  // 3. 这里要注意看懂computed的缓存机制
   if (opts.computed) initComputed(vm, opts.computed)
+  // initWatch
+  // 核心： 实例化一个 watcher实例 并返回一个 unwatch
   if (opts.watch && opts.watch !== nativeWatch) {
     initWatch(vm, opts.watch)
   }
+  // computed 与 watch 的区别
+  // 1. computed默认使用懒执行， 且不能修改（拦截了set），但是watcher科配置
+  // 2. 使用的场景不同，watcher可以使用异步，但是computed使用异步的话，返回的是一个promise对象，用法错误
 }
 
 function initProps (vm: Component, propsOptions: Object) {
@@ -194,11 +203,16 @@ const computedWatcherOptions = { lazy: true }
 
 function initComputed (vm: Component, computed: Object) {
   // $flow-disable-line
+  // 创建一个空对象，后面会使用到（主要用户存储每个computedKey对应的watcher对象）
   const watchers = vm._computedWatchers = Object.create(null)
   // computed properties are just getters during SSR
+  // 是否服务端渲染
   const isSSR = isServerRendering()
 
+  // 遍历 computed
   for (const key in computed) {
+    // 拿到computed[key] => val
+    // 因为val, 有可能是function或者{}，如果是function直接赋值，如果是{}就取里面的get方法
     const userDef = computed[key]
     const getter = typeof userDef === 'function' ? userDef : userDef.get
     if (process.env.NODE_ENV !== 'production' && getter == null) {
@@ -210,6 +224,7 @@ function initComputed (vm: Component, computed: Object) {
 
     if (!isSSR) {
       // create internal watcher for the computed property.
+      // 给每个computed的key创建watcher实例监听
       watchers[key] = new Watcher(
         vm,
         getter || noop,
@@ -263,19 +278,31 @@ export function defineComputed (
       )
     }
   }
+  // 将computed上的key代理到 vue实例上， 这样可以通过 this.computedKey 访问
   Object.defineProperty(target, key, sharedPropertyDefinition)
 }
 
 function createComputedGetter (key) {
   return function computedGetter () {
+    // 拿到对应的computed的key对应的watcher实例
     const watcher = this._computedWatchers && this._computedWatchers[key]
     if (watcher) {
+      /**
+       * 执行wather.dirty
+       * 1. 执行computed[key]的值（函数）得到函数返回的结果，赋值给watcher.value
+       * 2. 将watcher.dirty置为false
+       *  面试题： computed和methods有什么区别
+       *  computed具有缓存：
+       *    一次渲染中只执行一次computed[key]函数，后续访问就不会再执行（因为key对应的watcher.dirty已经被置为false)
+       *    直到下一次更新时，也就是调用watcher.update时，我们可以看到它将dirty置为了true，这个时候我们的computed[key]函数又可以执行了
+       */
       if (watcher.dirty) {
         watcher.evaluate()
       }
       if (Dep.target) {
         watcher.depend()
       }
+      // 返回watcher.value
       return watcher.value
     }
   }
@@ -318,6 +345,9 @@ function initMethods (vm: Component, methods: Object) {
 }
 
 function initWatch (vm: Component, watch: Object) {
+  // 遍历watch
+  // 判断watch[key]是否是数组，这里去看官网的使用方式：
+  // 分为： 数组 和 非数组两种（这个可以是function、{}， 字符串等）
   for (const key in watch) {
     const handler = watch[key]
     if (Array.isArray(handler)) {
@@ -336,10 +366,12 @@ function createWatcher (
   handler: any,
   options?: Object
 ) {
+  // handle是对象
   if (isPlainObject(handler)) {
     options = handler
     handler = handler.handler
   }
+  // handle是string， 直接去vue实例的methods找这个字符串方法名
   if (typeof handler === 'string') {
     handler = vm[handler]
   }
@@ -378,18 +410,23 @@ export function stateMixin (Vue: Class<Component>) {
     options?: Object
   ): Function {
     const vm: Component = this
+    // 这里再判断一次cb是否为对象，是因为用户可以直接this.$watch的方式创建watch，可能会传入对象
     if (isPlainObject(cb)) {
       return createWatcher(vm, expOrFn, cb, options)
     }
     options = options || {}
+    // 标记这是一个 用户watcher
     options.user = true
+    // 创建 watcher对象
     const watcher = new Watcher(vm, expOrFn, cb, options)
+    // 如果有 immediate， 立即执行回调函数
     if (options.immediate) {
       const info = `callback for immediate watcher "${watcher.expression}"`
       pushTarget()
       invokeWithErrorHandling(cb, vm, [watcher.value], vm, info)
       popTarget()
     }
+    // 返回一个 unwatch
     return function unwatchFn () {
       watcher.teardown()
     }
