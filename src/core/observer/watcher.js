@@ -126,12 +126,15 @@ export default class Watcher {
   /**
    * Add a dependency to this directive.
    */
+  // 双向收集依赖
   addDep (dep: Dep) {
     const id = dep.id
     if (!this.newDepIds.has(id)) {
+      // 将 新的dep收集到Watcher上
       this.newDepIds.add(id)
       this.newDeps.push(dep)
       if (!this.depIds.has(id)) {
+        // 将这个watcher收集到该dep实例的sub数组上，使用notify通知更细的时候，会遍历sub数组的watcher执行watcher.update更新数据
         dep.addSub(this)
       }
     }

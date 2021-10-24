@@ -192,7 +192,9 @@ export function defineReactive (
       } else {
         val = newVal
       }
+      // 对新数据进行响应式处理
       childOb = !shallow && observe(newVal)
+      // 当响应数据更改， 依赖通知更细 （所谓的异步更新）
       dep.notify()
     }
   })
@@ -269,6 +271,7 @@ export function del (target: Array<any> | Object, key: any) {
 /**
  * Collect dependencies on array elements when the array is touched, since
  * we cannot intercept array element access like property getters.
+ * 堆数组项时对象的数组进行依赖收集
  */
 function dependArray (value: Array<any>) {
   for (let e, i = 0, l = value.length; i < l; i++) {

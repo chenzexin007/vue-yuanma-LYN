@@ -33,7 +33,7 @@ export default class Dep {
       Dep.target.addDep(this)
     }
   }
-
+  // 通知订阅被更新的dep的所有watcher执行update方法更新数据
   notify () {
     // stabilize the subscriber list first
     const subs = this.subs.slice()
