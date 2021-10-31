@@ -99,11 +99,26 @@ export default class Watcher {
   /**
    * Evaluate the getter, and re-collect dependencies.
    */
+  /**
+   *  触发 updateComponent 的执行， 进行组件更新， 进入 patch阶段
+   *  更新组件时先执行 _render 函数，生成 VNode，期间触发读取操作，进行依赖收集
+   */
   get () {
+    /**
+     * pushTarget(this)  相当于 Dep.target = this, 也就是第一步
+     *  再次收集依赖
+     * 为什么要在这里，为什么是在这里触发依赖收集呢：
+     *  因为我们在响应式处理中，拦截了set，对值进行了更新，并对新值进行响应式处理，但是
+     *  我们收集依赖的时候其实是双向收集：
+     *    我们之前是通过compiler new watcher的时候，Dep.target = this; vm[key]触发get双向收集;Dep.target = null释放
+     *  所以我们这里也要主动触发它去实现双向收集
+     */
     pushTarget(this)
     let value
     const vm = this.vm
     try {
+      // 第二步，执行new watcher options中的第二个参数方法(也有可能是一个key，通过vm[key]最终也是返回值触发get),
+      // 返回一个值，相当于第二步 vm[key]触发get
       value = this.getter.call(vm, vm)
     } catch (e) {
       if (this.user) {
@@ -117,6 +132,7 @@ export default class Watcher {
       if (this.deep) {
         traverse(value)
       }
+      // 相当于 Dep.target = null
       popTarget()
       this.cleanupDeps()
     }
@@ -167,11 +183,20 @@ export default class Watcher {
    */
   update () {
     /* istanbul ignore else */
+    /**
+     * 懒执行：
+     *    将dirty置为true，
+     *    用处： 主要用于computed触发get的时候，执行watcer.evaluate[key]方法，将返回值赋值给watcher.value, watcher.dirty置为false,
+     *    最终返回watcher.value(dirty变为false是computed缓存的原理关键)
+     */
     if (this.lazy) {
       this.dirty = true
     } else if (this.sync) {
+      // 同步走这里
+      // this.$watch或者new Watcher时传入配置{ sync: true }时走这里
       this.run()
     } else {
+      // 一般都是走这里
       queueWatcher(this)
     }
   }
@@ -182,6 +207,7 @@ export default class Watcher {
    */
   run () {
     if (this.active) {
+      // 最重要的，执行get
       const value = this.get()
       if (
         value !== this.value ||
@@ -189,11 +215,12 @@ export default class Watcher {
         // when the value is the same, because the value may
         // have mutated.
         isObject(value) ||
-        this.deep
+        this.deep   // 如果有deep属性
       ) {
         // set new value
         const oldValue = this.value
         this.value = value
+        // 如果时用户watcher
         if (this.user) {
           const info = `callback for watcher "${this.expression}"`
           invokeWithErrorHandling(this.cb, this.vm, [value, oldValue], this.vm, info)

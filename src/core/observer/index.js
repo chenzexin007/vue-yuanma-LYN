@@ -34,6 +34,10 @@ export function toggleObserving (value: boolean) {
  * object's property keys into getter/setters that
  * collect dependencies and dispatch updates.
  */
+/**
+ * 1：给当前对象添加属性__ob__,代表已经使用了响应式处理
+ * 2: 区分值是数组还是对象，进行响应得响应式处理
+ */
 export class Observer {
   value: any;
   dep: Dep;
@@ -61,6 +65,11 @@ export class Observer {
    * Walk through all properties and convert them into
    * getter/setters. This method should only be called when
    * value type is Object.
+   */
+  /**
+   *
+   * 遍历obj中得key，对每个key进行响应式处理
+   * 响应式得核心： definedReactive
    */
   walk (obj: Object) {
     const keys = Object.keys(obj)
@@ -135,6 +144,17 @@ export function observe (value: any, asRootData: ?boolean): Observer | void {
 /**
  * Define a reactive property on an Object.
  */
+/**
+ * 总结：
+ *  1.为当前key创建一个dep订阅者
+ *  2.通过Object.definedPerty实现对当前key得set和get拦截
+ *  3.get中：
+ *    1） 依赖双向收集
+ *    2） 返回值
+ *  4. set中：
+ *    1） 对新值进行响应式处理
+ *    2） 调用 1 中key得dep.notify,通知所有订阅了watcher触发updat方法，更新dom
+ */
 export function defineReactive (
   obj: Object,
   key: string,
@@ -161,6 +181,14 @@ export function defineReactive (
   Object.defineProperty(obj, key, {
     enumerable: true,
     configurable: true,
+    /**
+     *
+     * 这里会做一个依赖双向收集：
+     * 1.compiler编译的模板得时候，每解析到一个变量，就去创建一个watcher实例，然后将target指向这个watcher，
+     * 并主动触发get
+     * 2.触发get后，这边得dep就做依赖收集
+     * 3.watcher那边触发完后，又主动将target置为空释放掉，实现了双向收集
+     */
     get: function reactiveGetter () {
       const value = getter ? getter.call(obj) : val
       if (Dep.target) {
@@ -194,7 +222,7 @@ export function defineReactive (
       }
       // 对新数据进行响应式处理
       childOb = !shallow && observe(newVal)
-      // 当响应数据更改， 依赖通知更细 （所谓的异步更新）
+      // 当响应数据更改， 依赖通知更细 （所谓的异步更新， 也就是nextTick得原理）
       dep.notify()
     }
   })

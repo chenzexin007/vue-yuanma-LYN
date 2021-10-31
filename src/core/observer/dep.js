@@ -36,6 +36,7 @@ export default class Dep {
   // 通知订阅被更新的dep的所有watcher执行update方法更新数据
   notify () {
     // stabilize the subscriber list first
+    // 订阅这个dep的所有watcher
     const subs = this.subs.slice()
     if (process.env.NODE_ENV !== 'production' && !config.async) {
       // subs aren't sorted in scheduler if not running async
@@ -44,6 +45,7 @@ export default class Dep {
       subs.sort((a, b) => a.id - b.id)
     }
     for (let i = 0, l = subs.length; i < l; i++) {
+      // 所有watcher执行update
       subs[i].update()
     }
   }

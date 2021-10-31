@@ -83,7 +83,11 @@ if (typeof Promise !== 'undefined' && isNative(Promise)) {
     setTimeout(flushCallbacks, 0)
   }
 }
-
+/**
+ * callbacks是一个全局数组：
+ * 1. 用来存储我们this.$nextTick(fn)里面的fn
+ * 2. 使用try catch，处理我们传入的fn，捕获异常（因为我们写入的函数可能并不靠谱）
+ */
 export function nextTick (cb?: Function, ctx?: Object) {
   let _resolve
   callbacks.push(() => {
