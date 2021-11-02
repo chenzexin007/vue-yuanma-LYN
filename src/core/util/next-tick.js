@@ -102,7 +102,12 @@ export function nextTick (cb?: Function, ctx?: Object) {
     }
   })
   if (!pending) {
+    // pending主要作用是保证浏览器的异步任务队列中，同一时刻有且仅有一个 flushCallbacks 函数
     pending = true
+    // 利用浏览器的特性， 将flushCallbacks加入到浏览器的异步任务队列中
+    // 其中使用了优雅降级的方式
+    // 如果浏览器支持微任务，则加入微任务： Promise  > MutationObserver
+    // 如果浏览器不支持，则加入宏任务: setImmediate > setTimeout
     timerFunc()
   }
   // $flow-disable-line

@@ -407,6 +407,7 @@ export function mergeOptions (
   // but only if it is a raw options object that isn't
   // the result of another mergeOptions call.
   // Only merged options has the _base property.
+  // child._base表示已经选项合并
   if (!child._base) {
     // child有extend、mixin字段的时候，需要进行选项合并
     if (child.extends) {
