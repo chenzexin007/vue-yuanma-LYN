@@ -409,7 +409,7 @@ export function mergeOptions (
   // Only merged options has the _base property.
   // child._base表示已经选项合并
   if (!child._base) {
-    // child有extend、mixin字段的时候，需要进行选项合并
+    // child有extend、mixin字段的时候，需要递归进行选项合并
     if (child.extends) {
       parent = mergeOptions(parent, child.extends, vm)
     }

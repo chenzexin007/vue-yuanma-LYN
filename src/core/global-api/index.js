@@ -18,6 +18,21 @@ import {
   defineReactive
 } from '../util/index'
 
+/**
+ * 全局api：
+ * 1.Vue.config
+ * 2.工具方法 Vue.util
+ *    Vue.util.warn  Vue.util.extend  Vue.util.mergeOptions  Vue.util.defineReactive
+ * 3.Vue.set
+ * 4.Vue.delete
+ * 5.Vue.nextTick
+ * 6.Vue.observable
+ * 7.Vue.options
+ *    Vue.options = { components: {}, directives: {}, filters: {} }
+ *    Vue.options._base = Vue
+ * 
+ */
+
 export function initGlobalAPI (Vue: GlobalAPI) {
   // config
   const configDef = {}
@@ -41,7 +56,7 @@ export function initGlobalAPI (Vue: GlobalAPI) {
   Vue.util = {
     // 日志提示
     warn,
-    // extend: 函数/配置对象， 和mixin类似，用于复制上面的属性
+    // extend: 函数/配置对象， 和mixin类似: 一种浅拷贝to[key] = from[key]，用于复制上面的属性
     extend,
     // 选项合并
     mergeOptions,
