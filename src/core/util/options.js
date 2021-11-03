@@ -398,7 +398,7 @@ export function mergeOptions (
     child = child.options
   }
 
-  // 规格化数据
+  // 规格化数据 props/ inject/ directive
   normalizeProps(child, vm)
   normalizeInject(child, vm)
   normalizeDirectives(child)

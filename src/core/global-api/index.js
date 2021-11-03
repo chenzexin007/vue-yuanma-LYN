@@ -30,7 +30,7 @@ import {
  * 7.Vue.options
  *    Vue.options = { components: {}, directives: {}, filters: {} }
  *    Vue.options._base = Vue
- * 
+ *
  */
 
 export function initGlobalAPI (Vue: GlobalAPI) {
@@ -84,12 +84,18 @@ export function initGlobalAPI (Vue: GlobalAPI) {
 
   // this is used to identify the "base" constructor to extend all plain-object
   // components with in Weex's multi-instance scenarios.
+  // 将Vue构造函数放到Vue.options._base上
+  // 在实现Vue.options = { conponents: {}, directives: {}, filters: {} }等会用到
   Vue.options._base = Vue
 
+  // 将keep-alive放到Vue.options.components对象中
   extend(Vue.options.components, builtInComponents)
 
+  // 注册插件， 本质是执行 install方法，并将新插件存入插件缓存数组
   initUse(Vue)
+  // 本质是选项合并， 将选项合并到全局的options上
   initMixin(Vue)
   initExtend(Vue)
+  //实现： Vue.options = { conponents: {}, directives: {}, filters: {} }
   initAssetRegisters(Vue)
 }

@@ -16,10 +16,14 @@ export function initExtend (Vue: GlobalAPI) {
   /**
    * Class inheritance
    */
+  /**
+   * 实质： 扩展Vue子类， 预设一些配置项
+   */
   Vue.extend = function (extendOptions: Object): Function {
     extendOptions = extendOptions || {}
     const Super = this
     const SuperId = Super.cid
+    // 冲缓存中查找， 如果找到直接返回
     const cachedCtors = extendOptions._Ctor || (extendOptions._Ctor = {})
     if (cachedCtors[SuperId]) {
       return cachedCtors[SuperId]
@@ -29,13 +33,14 @@ export function initExtend (Vue: GlobalAPI) {
     if (process.env.NODE_ENV !== 'production' && name) {
       validateComponentName(name)
     }
-
+    // 相当于又实现了一个vue
     const Sub = function VueComponent (options) {
       this._init(options)
     }
     Sub.prototype = Object.create(Super.prototype)
     Sub.prototype.constructor = Sub
     Sub.cid = cid++
+    // 选项合并
     Sub.options = mergeOptions(
       Super.options,
       extendOptions
@@ -63,6 +68,15 @@ export function initExtend (Vue: GlobalAPI) {
       Sub[type] = Super[type]
     })
     // enable recursive self-lookup
+    /**
+     * 组件递归自调用的原理
+     * {
+     *  name: 'Comp',
+     *  components: {
+     *    Comp: 'Comp'
+     *  }
+     * }
+     */
     if (name) {
       Sub.options.components[name] = Sub
     }
@@ -75,7 +89,9 @@ export function initExtend (Vue: GlobalAPI) {
     Sub.sealedOptions = extend({}, Sub.options)
 
     // cache constructor
+    // 设置缓存
     cachedCtors[SuperId] = Sub
+    // 返回构造函数
     return Sub
   }
 }
