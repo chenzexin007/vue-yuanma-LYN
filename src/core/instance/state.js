@@ -379,6 +379,13 @@ function createWatcher (
   return vm.$watch(expOrFn, handler, options)
 }
 
+/**
+ * Vue.prototype.$data 只读，或者添加key,不能覆盖
+ * Vue.prototype.$props  只读，或者添加key,不能覆盖
+ * Vue.prototype.$set = 全局的set， 其实是多了个别名而已
+ * Vue.prototype.$del = 全局的set， 其实是多了个别名而已
+ * vue.prototype.$watch
+ */
 export function stateMixin (Vue: Class<Component>) {
   // flow somehow has problems with directly declared definition object
   // when using Object.defineProperty, so we have to procedurally build up
@@ -399,12 +406,16 @@ export function stateMixin (Vue: Class<Component>) {
       warn(`$props is readonly.`, this)
     }
   }
+  // Vue.prototype.$data
+  // Vue.prototype.$props
   Object.defineProperty(Vue.prototype, '$data', dataDef)
   Object.defineProperty(Vue.prototype, '$props', propsDef)
 
+  // Vue.prototype.$set   Vue.prototype.$del
   Vue.prototype.$set = set
   Vue.prototype.$delete = del
-
+  // vue.prototype.$watch
+  // 所有的watch的创建过程都要经过这里
   Vue.prototype.$watch = function (
     expOrFn: string | Function,
     cb: any,
@@ -412,6 +423,7 @@ export function stateMixin (Vue: Class<Component>) {
   ): Function {
     const vm: Component = this
     // 这里再判断一次cb是否为对象，是因为用户可以直接this.$watch的方式创建watch，可能会传入对象
+    // 确保watch返回的是一个函数
     if (isPlainObject(cb)) {
       return createWatcher(vm, expOrFn, cb, options)
     }

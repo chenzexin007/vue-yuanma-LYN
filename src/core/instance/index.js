@@ -18,7 +18,21 @@ function Vue (options) {
 }
 
 initMixin(Vue)
+// 实例方法的实现
+/**
+ * vue.prototype.$data
+ * vue.prototype.$props
+ * vue.prototype.$set
+ * vue.prototype.$del
+ * vue.prototype.$watch
+ */
 stateMixin(Vue)
+/**
+ * vue.prototype.$on
+ * vue.prototype.$once
+ * vue.prototype.$off
+ * vue.prototype.$emit
+ */
 eventsMixin(Vue)
 lifecycleMixin(Vue)
 renderMixin(Vue)

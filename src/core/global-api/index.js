@@ -30,7 +30,10 @@ import {
  * 7.Vue.options
  *    Vue.options = { components: {}, directives: {}, filters: {} }
  *    Vue.options._base = Vue
- *
+ * 8. keep-alive 放入 Vue.options.components中
+ * 9. Vue.use
+ * 10. Vue.mixin
+ * 11. Vue.extend
  */
 
 export function initGlobalAPI (Vue: GlobalAPI) {

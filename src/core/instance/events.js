@@ -48,20 +48,27 @@ export function updateComponentListeners (
   updateListeners(listeners, oldListeners || {}, add, remove, createOnceHandler, vm)
   target = undefined
 }
-
+/**
+ *
+ */
 export function eventsMixin (Vue: Class<Component>) {
   const hookRE = /^hook:/
   Vue.prototype.$on = function (event: string | Array<string>, fn: Function): Component {
+    // this.$emit( string | Array, fn), 可以是数组或者是string，也就是说多个事件监听都会执行同个fn的回调，
     const vm: Component = this
-    if (Array.isArray(event)) {
+    if (Array.isArray(event)) {  // 数组，直接遍历，逐个处理成this.$emit('event1', cb1)
       for (let i = 0, l = event.length; i < l; i++) {
         vm.$on(event[i], fn)
       }
-    } else {
+    } else { // string， 已经是this.$emit('event1', cb1)的形式
+      // 查找当前vue实例中的_events下是否有这个event事件明，没有就创建一个空数组，并把当前的这个cb函数push进去
+      // 处理成 { 'event1': [cb1, cb2 ...] }
+      // 也就是说event和cb其实可以是一对一，一对多，多对一，多对多的情况
       (vm._events[event] || (vm._events[event] = [])).push(fn)
       // optimize hook:event cost by using a boolean flag marked at registration
       // instead of a hash lookup
       if (hookRE.test(event)) {
+        // hooER线不看
         vm._hasHookEvent = true
       }
     }
