@@ -41,7 +41,9 @@ export function invokeWithErrorHandling (
   info: string
 ) {
   let res
+  // 使用try catch异常捕获处理我们的cb函数
   try {
+    // 这个是核心，直接把我们的参数传递给cb，并执行cb
     res = args ? handler.apply(context, args) : handler.call(context)
     if (res && !res._isVue && isPromise(res) && !res._handled) {
       res.catch(e => handleError(e, vm, info + ` (Promise/async)`))
