@@ -56,6 +56,8 @@ export function initLifecycle (vm: Component) {
 }
 
 export function lifecycleMixin (Vue: Class<Component>) {
+  // 组件更新的入口
+  // 分为初次更新 和 二次更新
   Vue.prototype._update = function (vnode: VNode, hydrating?: boolean) {
     const vm: Component = this
     const prevEl = vm.$el
@@ -64,11 +66,15 @@ export function lifecycleMixin (Vue: Class<Component>) {
     vm._vnode = vnode
     // Vue.prototype.__patch__ is injected in entry points
     // based on the rendering backend used.
+    // 是否存在旧的Vnode
     if (!prevVnode) {
       // initial render
+      // 初次更新走这里
+      // patch阶段， diff算法
       vm.$el = vm.__patch__(vm.$el, vnode, hydrating, false /* removeOnly */)
     } else {
       // updates
+      // 传入新旧Vnode做diff算法，替换修改的地方
       vm.$el = vm.__patch__(prevVnode, vnode)
     }
     restoreActiveInstance()
@@ -87,13 +93,14 @@ export function lifecycleMixin (Vue: Class<Component>) {
     // updated in a parent's updated hook.
   }
 
+  // 强制当前组件重新更新
   Vue.prototype.$forceUpdate = function () {
     const vm: Component = this
     if (vm._watcher) {
       vm._watcher.update()
     }
   }
-
+  // 销毁组件，解除一些绑定，一般都是使用v-if
   Vue.prototype.$destroy = function () {
     const vm: Component = this
     if (vm._isBeingDestroyed) {
@@ -189,6 +196,7 @@ export function mountComponent (
     // 负责更i性能组件
     updateComponent = () => {
       // 执行 _update 进入更新阶段， 首先执行 _render, 将组件变成VNode
+      // _update diff算法的入口
       vm._update(vm._render(), hydrating)
     }
   }
@@ -336,17 +344,41 @@ export function deactivateChildComponent (vm: Component, direct?: boolean) {
   }
 }
 
+/**
+ * hook Event 的实现元源码
+ * 使用场景： 在不修改子组件/第三方组件源码的基础上，向子组件/第三方组件的指定声明周期函数中注入自定义事件
+ *          子组件执行该生命周期函数时，就会触发这个自定义函数
+ *  子组件:  comp
+ *    mounted(){
+ *      console.log('子组件的mounted')
+ *    }
+ *  父组件： 
+ *    <comp @hook:mounted="vailMethod"></comp>
+ *    methods:{
+ *      vailMethod(){
+ *          console.log("父组件插入子组件mounted声明周期函数中的自定义方法执行了")
+ *      }
+ *    }
+ */
+
+
+// eg. callHook( vm, mounted )
 export function callHook (vm: Component, hook: string) {
   // #7573 disable dep collection when invoking lifecycle hooks
+  // 打开依赖收集
   pushTarget()
+  // mounted
   const handlers = vm.$options[hook]
   const info = `${hook} hook`
   if (handlers) {
     for (let i = 0, j = handlers.length; i < j; i++) {
+      // mounted()
       invokeWithErrorHandling(handlers[i], vm, null, vm, info)
     }
   }
+  // 是否存在hook Event， 有的话执行
   if (vm._hasHookEvent) {
+    // vm.$emit('hook:mounted'), 触发这个监听函数下的cb数组，即vm_events['hook:mounted']的cb数组函数
     vm.$emit('hook:' + hook)
   }
   popTarget()
