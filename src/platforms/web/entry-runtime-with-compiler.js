@@ -14,11 +14,20 @@ const idToTemplate = cached(id => {
   return el && el.innerHTML
 })
 
+// 缓存$mount
 const mount = Vue.prototype.$mount
+// 重写$mount
+// 1. 有$options.render 直接挂载
+// 2. 没有$options.render
+//   1）有$options.template, template = $options.template
+//     a) typeof template === 'string', 截取 #， 获取元素的innerHTML作为模板
+//     b) template.nodeType  取元素的innerHTML作为模板
+//   2) 没有$options.template, 只有el选项， 通过el获取元素，直接作为模板
 Vue.prototype.$mount = function (
   el?: string | Element,
   hydrating?: boolean
 ): Component {
+  // el处理成字符串
   el = el && query(el)
 
   /* istanbul ignore if */
@@ -31,9 +40,12 @@ Vue.prototype.$mount = function (
 
   const options = this.$options
   // resolve template/el and convert to render function
+  // options中没有render， 通过编译得到render函数
   if (!options.render) {
     let template = options.template
+    // 有template选项
     if (template) {
+      // 获取的是innerHTML
       if (typeof template === 'string') {
         if (template.charAt(0) === '#') {
           template = idToTemplate(template)
@@ -54,6 +66,9 @@ Vue.prototype.$mount = function (
         return this
       }
     } else if (el) {
+      // 没有template选项， 使用el选项
+      // 获取的是outHTML
+      // <div id="APP">innerHTML</div>
       template = getOuterHTML(el)
     }
     if (template) {
@@ -61,7 +76,8 @@ Vue.prototype.$mount = function (
       if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
         mark('compile')
       }
-
+      // 重点
+      // 通过这里得到render函数 和 staticRenderFns 函数
       const { render, staticRenderFns } = compileToFunctions(template, {
         outputSourceRange: process.env.NODE_ENV !== 'production',
         shouldDecodeNewlines,
@@ -79,6 +95,7 @@ Vue.prototype.$mount = function (
       }
     }
   }
+  // 挂载
   return mount.call(this, el, hydrating)
 }
 
